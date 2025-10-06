@@ -1,0 +1,16 @@
+# Environments
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.xlsx
+*.xls
+*.csv
+converted/
+temp/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
