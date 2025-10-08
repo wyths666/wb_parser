@@ -5,10 +5,9 @@ from parser import WildberriesRobustParser
 def main():
     """Основная функция"""
     print("=" * 60)
-    print("           🛍️ ПАРСЕР WILDBERRIES (С ФИЛЬТРАЦИЕЙ)")
+    print("           🛍️ ПАРСЕР WILDBERRIES")
     print("=" * 60)
-    print("⚡ Игнорирует товары из карусели конструктора")
-    print("=" * 60)
+
 
     parser = WildberriesRobustParser(headless=False)
 

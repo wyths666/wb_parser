@@ -392,7 +392,6 @@ class WildberriesRobustParser:
                 print(f"⚠️ Удалено дубликатов: {initial_count - final_count}")
 
             # Сохраняем в Excel
-            #df.to_excel(filename, index=False, engine='openpyxl')
             df = df[["product_id", "product_url", "brand", "name", "price", "discount", "rating", "reviews_count", "full_name", "photo_url"]]
             redact(df, filename)
             print(f"\n🎉 ДАННЫЕ УСПЕШНО СОХРАНЕНЫ!")

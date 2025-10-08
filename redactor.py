@@ -4,10 +4,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.hyperlink import Hyperlink
 
-# Предположим, ваш DataFrame называется df
-# (замените на ваш реальный df)
 
-# Создаём новый Excel-файл через openpyxl
 def redact(df, name = 'wb_products_formatted.xlsx'):
     wb = Workbook()
     ws = wb.active
@@ -50,7 +47,7 @@ def redact(df, name = 'wb_products_formatted.xlsx'):
                 cell.style = "Hyperlink"
 
 # Автоподбор ширины столбцов
-    # Сначала сделаем автоподбор для ВСЕХ столбцов
+
     for column in ws.columns:
         max_length = 0
         column_letter = column[0].column_letter
@@ -63,7 +60,7 @@ def redact(df, name = 'wb_products_formatted.xlsx'):
         adjusted_width = min(max_length + 2, 50)
         ws.column_dimensions[column_letter].width = adjusted_width
 
-    # Теперь ПЕРЕОПРЕДЕЛИМ ширину для product_url и photo_url
+
     column_names = df.columns.tolist()
     for col_idx, col_name in enumerate(column_names, start=1):
         if col_name in ['product_url', 'photo_url']:
