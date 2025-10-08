@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парсинг WILDBERRIES</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .alert {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Парсинг WILDBERRIES</h1>
+
+        {% if message %}
+        <div class="alert {% if success %}alert-success{% else %}alert-danger{% endif %}">
+            {{ message }}
+        </div>
+        {% endif %}
+
+        <!-- Форма поиска по ключевым словам -->
+        <form method="post" action="/start/">
+            <div class="form-group">
+                <label for="text_keywords">Введите ключевые слова:</label>
+                <textarea id="text_keywords" name="text" placeholder="Например: iPhone 15" required></textarea>
+            </div>
+            <input type="hidden" name="mode" value="search">
+            <button type="submit" class="btn">🚀 Поиск по ключевым словам</button>
+        </form>
+
+        <hr style="margin: 20px 0;">
+
+        <!-- Форма поиска по ID продавца -->
+        <form method="post" action="/start/">
+            <div class="form-group">
+                <label for="text_seller">Введите ID продавца:</label>
+                <textarea id="text_seller" name="text" placeholder="Например: 123456" required></textarea>
+            </div>
+            <input type="hidden" name="mode" value="seller">
+            <button type="submit" class="btn">🚀 Поиск по ID продавца</button>
+        </form>
+    </div>
+</body>
+</html>

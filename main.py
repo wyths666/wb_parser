@@ -1,5 +1,5 @@
 import time
-from parser import WildberriesRobustParser
+from wb_parser import WildberriesRobustParser
 
 
 def main():
