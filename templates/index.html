@@ -49,6 +49,10 @@
         .btn:hover {
             background-color: #45a049;
         }
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
         .alert {
             padding: 15px;
             margin-top: 20px;
@@ -65,39 +69,82 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        /* Индикатор загрузки */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Скрытие формы при загрузке */
+        .form-section {
+            transition: opacity 0.3s;
+        }
+        .form-section.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Парсинг WILDBERRIES</h1>
+        <h1>
+            <a href="/">Парсинг WILDBERRIES</a>
+        </h1>
 
         {% if message %}
         <div class="alert {% if success %}alert-success{% else %}alert-danger{% endif %}">
             {{ message }}
+            {% if success and "файл:" in message %}
+            <form method="post" style="display:inline-block; margin-left: 10px;">
+                <button type="submit" class="btn" name="download" value="{{ message }}">скачать файл</button>
+            </form>
+            {% endif %}
         </div>
         {% endif %}
 
-        <!-- Форма поиска по ключевым словам -->
-        <form method="post" action="/start/">
-            <div class="form-group">
-                <label for="text_keywords">Введите ключевые слова:</label>
-                <textarea id="text_keywords" name="text" placeholder="Например: iPhone 15" required></textarea>
-            </div>
-            <input type="hidden" name="mode" value="search">
-            <button type="submit" class="btn">🚀 Поиск по ключевым словам</button>
-        </form>
+        <!-- Обернём форму в div для скрытия -->
+        <div class="form-section">
+            <form method="post" id="main-form">
+                <div class="form-group">
+                    <label for="text_keywords">Введите ключевые слова или id продавца:</label>
+                    <textarea id="text_keywords" name="text" placeholder="Например: iPhone 15 или best_buy_seller" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="qty">Введите количество карточек:</label>
+                    <textarea id="qty" name="qty" placeholder="1-1000" required></textarea>
+                </div>
 
-        <hr style="margin: 20px 0;">
+                <button type="submit" class="btn" name="mode" value="search">🚀 Поиск по ключевым словам</button>
+                <button type="submit" class="btn" name="mode" value="seller">🚀 Поиск по ID продавца</button>
+            </form>
+        </div>
 
-        <!-- Форма поиска по ID продавца -->
-        <form method="post" action="/start/">
-            <div class="form-group">
-                <label for="text_seller">Введите ID продавца:</label>
-                <textarea id="text_seller" name="text" placeholder="Например: 123456" required></textarea>
-            </div>
-            <input type="hidden" name="mode" value="seller">
-            <button type="submit" class="btn">🚀 Поиск по ID продавца</button>
-        </form>
+        <!-- Индикатор загрузки -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Парсинг в процессе... Это может занять несколько минут.</p>
+        </div>
     </div>
+
+    <script>
+        document.getElementById('main-form').addEventListener('submit', function() {
+            // Показать индикатор
+            document.getElementById('loading').style.display = 'block';
+            // Скрыть форму (с эффектом)
+            document.querySelector('.form-section').classList.add('loading');
+        });
+    </script>
 </body>
 </html>
