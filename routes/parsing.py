@@ -43,8 +43,13 @@ async def start_parsing(request: Request):
     try:
         if mode == "search":
             keyword = text.strip()
-            if not keyword:
-                message = "❌ Ключевые слова не могут быть пустыми"
+            if qty <= 10:
+                products = parser.parse_few_products(keyword, qty)
+                if products:
+                    filename = f"wildberries_{keyword.replace(' ', '_')}_{int(time.time())}.xlsx"
+                    parser.save_to_excel(products, filename)
+                    message = f"✅ Успешно! Сохранено {len(products)} товаров в файл: {filename}"
+                    success = True
             else:
                 products = parser.parse_by_keyword(keyword, qty)
                 if products:
@@ -78,6 +83,7 @@ async def start_parsing(request: Request):
 
     finally:
         parser.close()
+
 
     # Подготовим параметры для редиректа
     params = []

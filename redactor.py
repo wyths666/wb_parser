@@ -3,6 +3,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.hyperlink import Hyperlink
+import os
+from pathlib import Path
 
 
 def redact(df, name = 'wb_products_formatted.xlsx'):
@@ -72,7 +74,7 @@ def redact(df, name = 'wb_products_formatted.xlsx'):
         #full_name
 
 # Сохраняем файл
-
+    
     output_file = name
     wb.save(output_file)
     print(f"Файл успешно сохранён: {output_file}")

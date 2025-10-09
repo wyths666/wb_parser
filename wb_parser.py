@@ -3,12 +3,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
 import time
 import re
 from urllib.parse import quote
-
 from redactor import redact
 
 
@@ -41,59 +40,99 @@ class WildberriesRobustParser:
         print("Браузер запущен успешно!")
 
     def parse_by_keyword(self, keyword: str, max_products: int = 50) -> list:
-        """Парсинг товаров по ключевому слову"""
+        start = time.perf_counter()
         print(f"🔍 Поиск товаров по запросу: '{keyword}'")
 
         try:
             search_url = f"https://www.wildberries.ru/catalog/0/search.aspx?search={quote(keyword)}&sort=popular"
-            print(f"🌐 Переход по URL: {search_url}")
-
             self.driver.get(search_url)
             self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-nm-id]')))
-            time.sleep(3)
+            time.sleep(2)
 
             products = []
             page = 1
 
             while len(products) < max_products:
-                print(f"\n📄 Обработка страницы {page}...")
+                print(f"📄 Обработка страницы {page}...")
 
-                self._scroll_page()
-
-                # Ищем карточки товаров, исключая карусель конструктора
-                product_cards = self._get_valid_product_cards()
+                # 🔥 УМНАЯ ЛОГИКА ПРОКРУТКИ:
+                if max_products <= 45:
+                    # Для малого количества - легкая прокрутка
+                    self._scroll_page_light()
+                    product_cards = self._get_valid_product_cards()  # Только видимые
+                else:
+                    # Для большого количества - полная прокрутка всех карточек
+                    self._scroll_page()
+                    product_cards = self._get_valid_product_cards()  # Все карточки
 
                 if not product_cards:
-                    print("❌ Карточки товаров не найдены")
                     break
 
-                print(f"📦 Найдено карточек (после фильтрации): {len(product_cards)}")
+                print(f"📦 Найдено карточек: {len(product_cards)}")
 
-                new_products = self._parse_cards_safely(product_cards, max_products - len(products))
+                # Берем только нужное количество
+                needed = max_products - len(products)
+                new_products = self._parse_cards_safely(product_cards[:needed], needed)
                 products.extend(new_products)
 
                 print(f"✅ Успешно спаршено: {len(new_products)} товаров")
                 print(f"📊 Всего собрано: {len(products)}/{max_products}")
 
                 if len(products) >= max_products:
-                    print("🎯 Достигнут лимит товаров")
                     break
 
-                if not self._go_to_next_page():
-                    print("⏹️ Следующая страница не найдена")
-                    break
+                # Переход на следующую страницу только если нужно больше товаров
+                if len(products) < max_products:
+                    if not self._go_to_next_page():
+                        break
 
                 page += 1
-                time.sleep(2)
-
+                time.sleep(1)
+            end = time.perf_counter()
+            print(f"Выполнено за {end - start:.4f} секунд")
             return products
 
         except Exception as e:
             print(f"❌ Ошибка при парсинге: {e}")
             return []
 
+    def parse_few_products(self, keyword: str, max_products: int = 10) -> list:
+        """Быстрый парсинг для небольшого количества товаров"""
+        start = time.perf_counter()
+
+        print(f"⚡ Быстрый поиск {max_products} товаров по запросу: '{keyword}'")
+
+        try:
+            search_url = f"https://www.wildberries.ru/catalog/0/search.aspx?search={quote(keyword)}&sort=popular"
+            self.driver.get(search_url)
+            self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-nm-id]')))
+            time.sleep(1)
+
+            # Легкая прокрутка для подгрузки
+            self.driver.execute_script("window.scrollTo(0, 800);")
+            time.sleep(1)
+
+            # Берем только видимые карточки
+            product_cards = self._get_valid_product_cards()
+
+            if not product_cards:
+                return []
+
+            # Парсим только нужное количество
+            products = self._parse_cards_safely(product_cards[:max_products], max_products)
+            end = time.perf_counter()
+            print(f"Выполнено за {end - start:.4f} секунд")
+            print(f"⚡ Быстро спаршено: {len(products)} товаров")
+            return products
+
+        except Exception as e:
+            print(f"❌ Ошибка при быстром парсинге: {e}")
+            return []
+
+
     def parse_by_seller(self, seller_id: str, max_products: int = 50) -> list:
         """Парсинг товаров по продавцу"""
+        start = time.perf_counter()
         print(f"🔍 Поиск товаров продавца: {seller_id}")
 
         try:
@@ -134,7 +173,8 @@ class WildberriesRobustParser:
 
                 page += 1
                 time.sleep(2)
-
+            end = time.perf_counter()
+            print(f"Выполнено за {end - start:.4f} секунд")
             return products
 
         except Exception as e:
@@ -197,6 +237,64 @@ class WildberriesRobustParser:
             # В случае ошибки считаем карточку валидной (лучше собрать лишнее, чем пропустить)
             print(f"      ⚠️ Ошибка проверки карточки: {e}")
             return True
+
+    def _get_all_product_cards(self):
+        """Получает ВСЕ карточки товаров на странице (даже невидимые)"""
+        try:
+            # Ждем загрузки карточек
+            self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'article[data-nm-id]')))
+
+            # 🔥 Принудительно прокручиваем чтобы подгрузились ВСЕ карточки
+            self._scroll_to_load_all_cards()
+
+            # Теперь находим ВСЕ карточки (даже невидимые)
+            all_cards = self.driver.find_elements(By.CSS_SELECTOR, 'article[data-nm-id]')
+
+            # Фильтруем только валидные
+            valid_cards = [card for card in all_cards if self._is_valid_card(card)]
+
+            print(f"    📊 Всего карточек на странице: {len(all_cards)}")
+            print(f"    ✅ Валидных карточек: {len(valid_cards)}")
+
+            return valid_cards
+
+        except Exception as e:
+            print(f"    ⚠️ Ошибка при получении карточек: {e}")
+            return []
+
+    def _scroll_to_load_all_cards(self):
+        """Прокручивает страницу чтобы подгрузить все карточки"""
+        try:
+            print("    📜 Прокрутка для загрузки всех карточек...")
+
+            last_height = self.driver.execute_script("return document.body.scrollHeight")
+            cards_before = len(self.driver.find_elements(By.CSS_SELECTOR, 'article[data-nm-id]'))
+
+            while True:
+                # Прокручиваем до конца
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(1)  # Ждем подгрузки
+
+                # Проверяем новую высоту и количество карточек
+                new_height = self.driver.execute_script("return document.body.scrollHeight")
+                cards_after = len(self.driver.find_elements(By.CSS_SELECTOR, 'article[data-nm-id]'))
+
+                print(f"      Карточек: {cards_before} → {cards_after}")
+
+                # Если высота не изменилась и карточки не добавились - выходим
+                if new_height == last_height and cards_after == cards_before:
+                    break
+
+                last_height = new_height
+                cards_before = cards_after
+
+            # Возвращаемся вверх для удобства
+            self.driver.execute_script("window.scrollTo(0, 0);")
+            time.sleep(0.5)
+
+        except Exception as e:
+            print(f"    ⚠️ Ошибка прокрутки: {e}")
+
 
     def _parse_cards_safely(self, cards, max_count: int):
         """Безопасный парсинг карточек с обработкой ошибок"""
@@ -314,15 +412,27 @@ class WildberriesRobustParser:
         except:
             return None
 
+    def _scroll_page_light(self):
+        """Легкая прокрутка только для подгрузки следующих карточек"""
+        try:
+            print("    📜 Легкая прокрутка...")
+            # Прокручиваем немного, чтобы подгрузились следующие карточки
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight * 0.3);")
+            time.sleep(0.5)
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight * 0.6);")
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"    ⚠️ Ошибка прокрутки: {e}")
+
     def _scroll_page(self):
         """Прокрутка страницы"""
         try:
             print("    📜 Прокрутка страницы...")
 
-            scroll_pause_time = 1
+            scroll_pause_time = 0.3
             scroll_height = self.driver.execute_script("return document.body.scrollHeight")
             current_position = 0
-            scroll_step = 500
+            scroll_step = 800
 
             while current_position < scroll_height:
                 self.driver.execute_script(f"window.scrollTo(0, {current_position});")
@@ -333,8 +443,8 @@ class WildberriesRobustParser:
                 if new_height > scroll_height:
                     scroll_height = new_height
 
-            self.driver.execute_script("window.scrollTo(0, 0);")
-            time.sleep(1)
+            #self.driver.execute_script("window.scrollTo(0, 0);")
+            time.sleep(0.5)
 
         except Exception as e:
             print(f"    ⚠️ Ошибка прокрутки: {e}")
@@ -379,6 +489,8 @@ class WildberriesRobustParser:
         if not filename:
             timestamp = int(time.time())
             filename = f"wildberries_products_{timestamp}.xlsx"
+
+
 
         try:
             df = pd.DataFrame(products)
