@@ -1,24 +1,10 @@
 import uvicorn
-from fastapi.templating import Jinja2Templates
-from starlette.responses import HTMLResponse
-from starlette.responses import FileResponse
 from routes.parsing import router as  parsing
-from fastapi import FastAPI, Request
-
-
-templates = Jinja2Templates(directory="templates")
-
+from fastapi import FastAPI
 
 
 app = FastAPI(title="WB Parser API")
-
-
-
-
-
 app.include_router(parsing)
-
-
 
 
 def start_server():

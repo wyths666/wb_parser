@@ -6,32 +6,39 @@ from fastapi.responses import FileResponse
 import os
 from wb_parser import WildberriesRobustParser
 import time
+import urllib.parse
+
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/")
-async def broadcast_page(request: Request, message: str = None, success: bool = None):
+async def broadcast_page(request: Request, message: str = None, success: bool = None, filename: str = None):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "message": message,
-        "success": success
+        "success": success,
+        "filename": filename
     })
+
 
 @router.post("/", response_class=HTMLResponse)
 async def start_parsing(request: Request):
     form_data = await request.form()
     text = form_data.get("text", "").strip()
     mode = form_data.get("mode", "").strip()
-    qty = form_data.get("qty", "".strip())
+    qty = form_data.get("qty", "").strip()
     qty = int(qty)
     parser = WildberriesRobustParser(headless=True)
+
     print("✅ Обработчик вызван!")
     print("text =", repr(text))
     print("mode =", repr(mode))
     print("qty =", repr(qty))
+
     message = ""
     success = False
+    filename = None
 
     try:
         if mode == "search":
@@ -67,19 +74,34 @@ async def start_parsing(request: Request):
     except Exception as e:
         message = f"❌ Ошибка при парсинге: {str(e)}"
         success = False
+        filename = None
+
     finally:
         parser.close()
 
-    return RedirectResponse(
-        url=f"/?message={message}&success={success}",
-        status_code=303
-    )
+    # Подготовим параметры для редиректа
+    params = []
+    if message:
+        params.append(f"message={urllib.parse.quote(message)}")
+    if success is not None:
+        params.append(f"success={1 if success else 0}")
+    if filename:
+        params.append(f"filename={urllib.parse.quote(filename)}")
 
+    query_string = "&".join(params)
+    redirect_url = f"/?{query_string}"
+
+    return RedirectResponse(url=redirect_url, status_code=303)
 
 
 @router.get("/download/{filename}")
 async def download_file(filename: str):
-    file_path = os.path.join(os.getcwd(), filename)  # или укажите путь явно
+    # Защита от path traversal
+    if ".." in filename or filename.startswith("/"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Недопустимое имя файла")
+
+    file_path = os.path.join(os.getcwd(), filename)
     if os.path.exists(file_path):
         return FileResponse(path=file_path, filename=filename)
     else:

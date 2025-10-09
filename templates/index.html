@@ -104,15 +104,13 @@
         </h1>
 
         {% if message %}
-        <div class="alert {% if success %}alert-success{% else %}alert-danger{% endif %}">
-            {{ message }}
-            {% if success and "файл:" in message %}
-            <form method="post" style="display:inline-block; margin-left: 10px;">
-                <button type="submit" class="btn" name="download" value="{{ message }}">скачать файл</button>
-            </form>
-            {% endif %}
-        </div>
-        {% endif %}
+<div class="alert {% if success %}alert-success{% else %}alert-danger{% endif %}">
+    {{ message }}
+    {% if success and filename %}
+    <a href="/download/{{ filename }}" class="btn" style="margin-left: 10px; display:inline-block;">скачать файл</a>
+    {% endif %}
+</div>
+{% endif %}
 
         <!-- Обернём форму в div для скрытия -->
         <div class="form-section">
